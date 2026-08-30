@@ -59,6 +59,12 @@ public class Settings {
     @JsonProperty("isMAU")
     private Boolean isTrackingUsageEnabled = false;
 
+    @JsonProperty("sampling")
+    private InternalEventSamplingSettings.EventCategorySamplingRates sampling;
+
+    @JsonProperty("alwaysApplySampling")
+    private InternalEventSamplingSettings.AlwaysApplySampling alwaysApplySampling;
+
     public void setIsTrackingUsageEnabled(Boolean isTrackingUsageEnabled) {
         this.isTrackingUsageEnabled = isTrackingUsageEnabled;
     }
@@ -189,5 +195,21 @@ public class Settings {
 
     public void setWebConnectivityEnabled(Boolean isWebConnectivityEnabled) {
         this.isWebConnectivityEnabled = isWebConnectivityEnabled;
+    }
+
+    public InternalEventSamplingSettings.EventCategorySamplingRates getSampling() {
+        return sampling;
+    }
+
+    public void setSampling(InternalEventSamplingSettings.EventCategorySamplingRates sampling) {
+        this.sampling = sampling;
+    }
+
+    public InternalEventSamplingSettings.AlwaysApplySampling getAlwaysApplySampling() {
+        return alwaysApplySampling;
+    }
+
+    public void setAlwaysApplySampling(InternalEventSamplingSettings.AlwaysApplySampling alwaysApplySampling) {
+        this.alwaysApplySampling = alwaysApplySampling;
     }
 }

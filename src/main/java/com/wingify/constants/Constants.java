@@ -33,7 +33,7 @@ public class Constants {
   public static final int DEFAULT_EVENTS_PER_REQUEST = 100;
   public static final String WINGIFY_SDK_NAME = "wingify-fme-java-sdk";
   public static final String VWO_SDK_NAME = "vwo-fme-java-sdk";
-  public static final String SDK_VERSION = "1.60.0";
+  public static final String SDK_VERSION = "1.62.0";
   public static final long SETTINGS_EXPIRY = 10000000;
   public static final long SETTINGS_TIMEOUT = 50000;
 
@@ -78,4 +78,8 @@ public class Constants {
   // Holdout variation IDs
   public static final int HOLDOUT_VARIATION_IN = 1;      // User is IN holdout
   public static final int HOLDOUT_VARIATION_NOT_IN = 2;  // User is NOT IN holdout
+
+  // Internal events sampling — server runtime defaults
+  public static final int INTERNAL_EVENTS_DEFAULT_SAMPLING_PERCENT_SERVER = 10;
+  public static final boolean INTERNAL_EVENTS_DEFAULT_ALWAYS_APPLY_SAMPLING = false;
 }

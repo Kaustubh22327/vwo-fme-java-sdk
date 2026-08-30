@@ -27,6 +27,7 @@ import com.wingify.models.Settings;
 import com.wingify.models.user.WingifyInitOptions;
 import com.wingify.packages.logger.enums.LogLevelEnum;
 import com.wingify.utils.AliasingUtil;
+import com.wingify.services.InternalEventsSamplingService;
 import com.wingify.utils.DataTypeUtil;
 import com.wingify.utils.LogMessageUtil;
 import com.wingify.utils.SettingsUtil;
@@ -67,6 +68,8 @@ public class WingifyClient {
             if (!DataTypeUtil.isNull(this.processedSettings.getCollectionPrefix()) && !this.processedSettings.getCollectionPrefix().isEmpty()) {
                 this.wingifyBuilder.getSettingsManager().collectionPrefix = this.processedSettings.getCollectionPrefix();
             }
+            // Keep parsed settings in sync for sampling lookups (e.g. debug events)
+            this.wingifyBuilder.getSettingsManager().setProcessedSettings(this.processedSettings);
             SettingsUtil.processSettings(this.processedSettings, this.wingifyBuilder.getLoggerService());
         } catch (Exception exception) {
            System.err.println("exception occurred while parsing settings " + exception.getMessage());
@@ -94,9 +97,14 @@ public class WingifyClient {
                 }
             }
 
-            // get usage stats account id from settings
+            // get internal events sampling service
+            InternalEventsSamplingService internalEventsSamplingService =
+                this.wingifyBuilder.getSettingsManager().getInternalEventsSamplingService();
+            // get usage stats account id from settings 
             Integer usageStatsAccountId = this.processedSettings.getUsageStatsAccountId();
-            if (!DataTypeUtil.isNull(usageStatsAccountId) && usageStatsAccountId != 0) {
+            // check if valid usage stats account id and should send usage stats event is true
+            if (!DataTypeUtil.isNull(usageStatsAccountId) && usageStatsAccountId != 0
+                && internalEventsSamplingService.shouldSendUsageStatsEvent(this.processedSettings)) {
                 EventUtil.sendUsageStatsEvent(this.wingifyBuilder.getSettingsManager(), usageStatsAccountId);
             }
         } catch (Exception exception) {
@@ -367,6 +375,8 @@ public class WingifyClient {
             this.processedSettings = objectMapper.readValue(newSettings, Settings.class);
             // Check if the new settings are valid
             this.settings = newSettings;
+            // Keep parsed settings in sync for sampling after webhook/poll updates
+            this.wingifyBuilder.getSettingsManager().setProcessedSettings(this.processedSettings);
             if (this.validateSettings(this.processedSettings, ApiEnum.UPDATE_SETTINGS)) {
                 // Process the new settings and update the client instance
                 SettingsUtil.processSettings(this.processedSettings, this.wingifyBuilder.getLoggerService());

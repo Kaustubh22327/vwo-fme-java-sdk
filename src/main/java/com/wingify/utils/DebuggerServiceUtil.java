@@ -23,6 +23,7 @@ import com.wingify.services.SettingsManager;
 import com.wingify.constants.Constants;
 import com.wingify.packages.logger.enums.LogLevelEnum;
 import com.wingify.packages.network_layer.models.ResponseModel;
+import com.wingify.utils.InternalEventsSamplingUtil;
 
 import static com.wingify.utils.LogMessageUtil.buildMessage;
 
@@ -156,12 +157,24 @@ public class DebuggerServiceUtil {
     }
 
     /**
-     * Sends a debug event to VWO.
-     * @param settingsManager The settings manager containing configuration
-     * @param eventProps The properties for the event
+     * Sends a debug event to Wingify, applying sampling for high-volume error template keys.
+     * @param settingsManager The settings manager containing configuration and sampling service
+     * @param eventProps The properties for the event, including {@code msg_t}
      */
     public static void sendDebugEventToWingify(SettingsManager settingsManager, Map<String, Object> eventProps) {
         try {
+            Map<String, Object> safeEventProps = eventProps != null ? eventProps : new HashMap<>();
+            Object messageTemplateKey = safeEventProps.get("msg_t");
+            // Sampled keys: apply sampling only when alwaysApplySampling.server is true; others are ALWAYS_SEND
+            boolean isSampledDebugEvent = messageTemplateKey instanceof String
+                && InternalEventsSamplingUtil.isSampledDebugErrorTemplateKey((String) messageTemplateKey);
+
+            if (isSampledDebugEvent
+                && !settingsManager.getInternalEventsSamplingService()
+                    .shouldSendSampledDebugEvent(settingsManager.getProcessedSettings())) {
+                return;
+            }
+
             // Create query parameters
             Map<String, String> properties = NetworkUtil.getEventsBaseProperties(
                 settingsManager,

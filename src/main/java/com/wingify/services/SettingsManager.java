@@ -33,6 +33,9 @@ import com.wingify.packages.network_layer.models.ResponseModel;
 import com.wingify.utils.DebuggerServiceUtil;
 import com.wingify.utils.NetworkUtil;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // public class SettingsManager implements ISettingsManager {
 public class SettingsManager {
     public String sdkKey;
@@ -52,6 +55,9 @@ public class SettingsManager {
     public String collectionPrefix = "";
     public Boolean isProxyUrlProvided = false;
     public String proxyUrl = "";
+    private Settings processedSettings;
+    // Applies sampling rules for init, usage-stats, and debug internal events.
+    private final InternalEventsSamplingService internalEventsSamplingService = new InternalEventsSamplingService();
 
     public SettingsManager(WingifyInitOptions options, LoggerService loggerService) {
         this.loggerService = loggerService;
@@ -156,6 +162,30 @@ public class SettingsManager {
      */
     public Long getSettingsFetchTime() {
         return this.settingsFetchTime;
+    }
+
+    /**
+     * Returns the parsed settings used for internal event sampling decisions.
+     * @return Parsed settings from the last successful fetch or update
+     */
+    public Settings getProcessedSettings() {
+        return processedSettings;
+    }
+
+    /**
+     * Stores the parsed settings for sampling configuration lookups.
+     * @param processedSettings Parsed settings from the server
+     */
+    public void setProcessedSettings(Settings processedSettings) {
+        this.processedSettings = processedSettings;
+    }
+
+    /**
+     * Returns the service that applies internal SDK event sampling rules.
+     * @return Internal events sampling service instance
+     */
+    public InternalEventsSamplingService getInternalEventsSamplingService() {
+        return internalEventsSamplingService;
     }
 
     /**
@@ -265,9 +295,11 @@ public class SettingsManager {
                     }}, false);
                     return null;
                 }
-                SettingsSchema validationResult = new SettingsSchema().validateSettings(WingifyClient.objectMapper.readValue(settings, Settings.class));
+                Settings parsedSettings = WingifyClient.objectMapper.readValue(settings, Settings.class);
+                SettingsSchema validationResult = new SettingsSchema().validateSettings(parsedSettings);
                 if (validationResult.isValid()) {
                     this.isSettingsValidOnInit = true;
+                    this.setProcessedSettings(parsedSettings);
                     return settings;
                 } else {
                     loggerService.log(LogLevelEnum.ERROR, "INVALID_SETTINGS_SCHEMA", new HashMap<String, Object>() {{
